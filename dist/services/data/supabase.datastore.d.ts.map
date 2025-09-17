@@ -1,0 +1,1 @@
+{"version":3,"file":"supabase.datastore.d.ts","sourceRoot":"","sources":["../../../src/services/data/supabase.datastore.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,KAAK,UAAU,EAAE,KAAK,aAAa,EAAE,MAAM,0BAA0B,CAAC;AAG/E,qBAAa,iBAAkB,YAAW,UAAU;IAChD,OAAO,CAAC,MAAM,CAAiB;;IASzB,IAAI,CAAC,MAAM,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC;CAmBnD"}

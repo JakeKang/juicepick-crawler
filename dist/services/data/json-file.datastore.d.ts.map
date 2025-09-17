@@ -1,0 +1,1 @@
+{"version":3,"file":"json-file.datastore.d.ts","sourceRoot":"","sources":["../../../src/services/data/json-file.datastore.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,KAAK,UAAU,EAAE,KAAK,aAAa,EAAE,MAAM,0BAA0B,CAAC;AAI/E,qBAAa,iBAAkB,YAAW,UAAU;YAClC,MAAM;YAWN,OAAO;IAIf,IAAI,CAAC,MAAM,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC;CAMnD"}

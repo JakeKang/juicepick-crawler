@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawler Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://rsms.me/inter/inter.css');
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1c1917; }
+        ::-webkit-scrollbar-thumb { background-color: #52525b; border-radius: 10px; border: 2px solid #1c1917; }
+        .btn { @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50; }
+        .btn-primary { @apply bg-sky-500 text-stone-50 hover:bg-sky-500/90; }
+        .btn-secondary { @apply bg-stone-800 text-stone-50 hover:bg-stone-800/80; }
+        .btn-destructive { @apply bg-red-500 text-stone-50 hover:bg-red-500/90; }
+    </style>
+</head>
+<body class="bg-stone-950 text-stone-50">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold tracking-tight">Crawler Dashboard</h1>
+            <p class="text-stone-400">Live status and logs of the crawling system.</p>
+        </header>
+
+        <!-- Status Section -->
+        <section id="status-section" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Job Queue Status</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-stone-900 border border-stone-800 rounded-xl p-6"><h3 class="text-sm font-medium text-stone-400">Waiting</h3><p id="status-waiting" class="text-3xl font-bold tracking-tighter">0</p></div>
+                <div class="bg-stone-900 border border-stone-800 rounded-xl p-6"><h3 class="text-sm font-medium text-stone-400">Active</h3><p id="status-active" class="text-3xl font-bold tracking-tighter">0</p></div>
+                <div class="bg-stone-900 border border-stone-800 rounded-xl p-6"><h3 class="text-sm font-medium text-stone-400">Completed</h3><p id="status-completed" class="text-3xl font-bold tracking-tighter">0</p></div>
+                <div class="bg-stone-900 border border-stone-800 rounded-xl p-6"><h3 class="text-sm font-medium text-stone-400">Failed</h3><p id="status-failed" class="text-3xl font-bold tracking-tighter">0</p></div>
+            </div>
+        </section>
+
+        <!-- Controls Section -->
+        <section id="controls-section" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Controls</h2>
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Simple Actions -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Quick Actions</h3>
+                        <div class="flex space-x-2">
+                            <button id="retry-failed-btn" class="btn btn-secondary px-4 py-2">Retry All Failed</button>
+                            <button id="clean-queue-btn" class="btn btn-destructive px-4 py-2">Clean Old Jobs</button>
+                        </div>
+                    </div>
+                    <!-- Manual Trigger -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Manual Job Trigger</h3>
+                        <form id="manual-job-form" class="space-y-3">
+                            <input id="manual-url" type="url" placeholder="URL to crawl" class="bg-stone-800 border border-stone-700 rounded-md w-full px-3 py-2 text-sm" required>
+                            <textarea id="manual-selectors" placeholder='Selectors (JSON format), e.g., { "title": "h1" }' class="bg-stone-800 border border-stone-700 rounded-md w-full px-3 py-2 text-sm font-mono h-24" required></textarea>
+                            <button type="submit" class="btn btn-primary px-4 py-2">Trigger Job</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logs Section -->
+        <section id="logs-section">
+            <h2 class="text-xl font-semibold mb-4">Live Logs</h2>
+            <div class="bg-stone-900 border border-stone-800 rounded-xl h-96 overflow-y-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="sticky top-0 bg-stone-900/80 backdrop-blur-sm"><tr><th class="text-left p-3 font-medium text-stone-400 w-24">Time</th><th class="text-left p-3 font-medium text-stone-400 w-20">Level</th><th class="text-left p-3 font-medium text-stone-400">Message</th></tr></thead>
+                    <tbody id="logs-table-body" class="font-mono"></tbody>
+                </table>
+            </div>
+        </section>
+        <footer class="text-center mt-8 text-sm text-stone-500">Crawler Dashboard</footer>
+    </div>
+
+    <script>
+        const statusElements = { waiting: document.getElementById('status-waiting'), active: document.getElementById('status-active'), completed: document.getElementById('status-completed'), failed: document.getElementById('status-failed') };
+        const logsTableBody = document.getElementById('logs-table-body');
+        const levelColorClasses = { info: 'text-sky-400', warn: 'text-amber-400', error: 'text-red-400' };
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const data = await res.json();
+                statusElements.waiting.textContent = data.wait || 0;
+                statusElements.active.textContent = data.active || 0;
+                statusElements.completed.textContent = data.completed || 0;
+                statusElements.failed.textContent = data.failed || 0;
+            } catch (e) { console.error('Error fetching status:', e); }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const logs = await res.json();
+                logsTableBody.innerHTML = logs.map(log => `
+                    <tr class="border-t border-stone-800 hover:bg-stone-800/50">
+                        <td class="p-3 text-stone-500">${new Date(log.timestamp).toLocaleTimeString()}</td>
+                        <td class="p-3 font-semibold ${levelColorClasses[log.level] || 'text-stone-400'}">${log.level.toUpperCase()}</td>
+                        <td class="p-3 text-stone-300 whitespace-pre-wrap">
+                            ${log.message}
+                            ${log.details ? `<pre class="mt-2 text-xs text-stone-500 bg-stone-950 p-2 rounded-md whitespace-pre-wrap font-mono">${log.details}</pre>` : ''}
+                        </td>
+                    </tr>`).join('');
+            } catch (e) { console.error('Error fetching logs:', e); }
+        }
+
+        async function handleApiAction(url, options, successMsg) {
+            try {
+                const res = await fetch(url, options);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || `HTTP error! status: ${res.status}`);
+                alert(successMsg || data.message);
+                fetchAllData();
+            } catch (e) {
+                console.error('API Action failed:', e);
+                alert(`Error: ${e.message}`);
+            }
+        }
+
+        document.getElementById('retry-failed-btn').addEventListener('click', () => {
+            handleApiAction('/api/jobs/retry/all', { method: 'POST' }, 'Failed jobs have been queued for retry.');
+        });
+
+        document.getElementById('clean-queue-btn').addEventListener('click', () => {
+            if (!confirm('Are you sure you want to remove all old completed/failed jobs?')) return;
+            handleApiAction('/api/queue/clean', { method: 'DELETE' }, 'Old jobs have been cleaned.');
+        });
+
+        document.getElementById('manual-job-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = document.getElementById('manual-url').value;
+            const selectorsStr = document.getElementById('manual-selectors').value;
+            try {
+                const selectors = JSON.parse(selectorsStr);
+                handleApiAction('/api/jobs/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, selectors })
+                }, `Manual job for ${url} has been triggered.`);
+            } catch (err) {
+                alert('Invalid JSON in selectors field.');
+            }
+        });
+
+        function fetchAllData() { fetchStatus(); fetchLogs(); }
+        setInterval(fetchAllData, 3000);
+        document.addEventListener('DOMContentLoaded', fetchAllData);
+    </script>
+</body>
+</html>

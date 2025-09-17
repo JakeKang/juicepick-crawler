@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # API 서버 + 스케줄러
+  api-server:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    ports:
+      - '3002:3002'
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    command: pnpm start
+
+  # 크롤러 워커
+  crawler-worker:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    # Playwright가 사용하는 공유 메모리 크기 설정
+    shm_size: '1gb'
+
+  # Redis 데이터베이스
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

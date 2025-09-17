@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs", // 변환되는 자바스크립트 코드의 모듈 시스템을 설정
+    "esModuleInterop": true,
+    "target": "ES5", // 컴파일해서 만들어지는 자바스크립트 코드의 버전을 지정
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "sourceMap": true,
+    "downlevelIteration": true,
+    "noImplicitAny": false,
+    "paths": { "*": ["node_modules/"] }
+  },
+  "include": ["src/**/*"]
+}
