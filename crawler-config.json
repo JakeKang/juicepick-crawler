@@ -5,6 +5,7 @@
       "url": "https://xn--hu1b83j3sfk9e3xc.kr/category/%EC%A0%84%EC%B2%B4%EC%83%81%ED%92%88/24",
       "itemContainerSelector": "ul.prdList.grid4 > li",
       "selectors": {
+        "category": "div.titleArea > h2",
         "imageSrc": "div:nth-child(1) > a > img",
         "title": "div:nth-child(2) > strong",
         "price": [

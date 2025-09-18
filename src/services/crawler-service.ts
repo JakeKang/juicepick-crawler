@@ -149,6 +149,61 @@ class CrawlerService {
           `[CrawlerService] 페이지 로드 완료: ${currentPageUrl}`,
         );
 
+        // 페이지에서 카테고리 한 번만 추출 및 분류
+        let categoryName = '미상'; // 기본값 '미상'
+        const categorySelector = itemSelectors['category'];
+        if (categorySelector && !Array.isArray(categorySelector)) {
+          try {
+            const categoryTextContent = await page
+              .locator(categorySelector)
+              .first()
+              .textContent({ timeout: 2000 });
+            const sanitizedText = this.sanitizeText(categoryTextContent);
+
+            if (sanitizedText) {
+              if (
+                sanitizedText.includes('입호흡') ||
+                sanitizedText.includes('폐호흡')
+              ) {
+                categoryName = sanitizedText;
+              } else {
+                categoryName = '자사액상';
+              }
+              console.log(
+                `[CrawlerService] 페이지 카테고리 발견: ${sanitizedText}, 분류: ${categoryName}`,
+              );
+              loggingService.add(
+                'info',
+                `[CrawlerService] 페이지 카테고리 발견: ${sanitizedText}, 분류: ${categoryName}`,
+              );
+            } else {
+              console.log(
+                `[CrawlerService] 카테고리 텍스트가 비어있어 '미상'으로 처리합니다.`,
+              );
+              loggingService.add(
+                'info',
+                `[CrawlerService] 카테고리 텍스트가 비어있어 '미상'으로 처리합니다.`,
+              );
+            }
+          } catch (e) {
+            console.warn(
+              `[CrawlerService] 페이지 카테고리를 찾을 수 없어 '미상'으로 처리합니다.`,
+            );
+            loggingService.add(
+              'warn',
+              `[CrawlerService] 페이지 카테고리를 찾을 수 없어 '미상'으로 처리합니다.`,
+            );
+          }
+        } else {
+          console.log(
+            `[CrawlerService] 카테고리 선택자가 제공되지 않아 '미상'으로 처리합니다.`,
+          );
+          loggingService.add(
+            'info',
+            `[CrawlerService] 카테고리 선택자가 제공되지 않아 '미상'으로 처리합니다.`,
+          );
+        }
+
         // 개별 제품 컨테이너 크롤링
         if (itemContainerSelector) {
           const itemContainers = await page
@@ -168,9 +223,13 @@ class CrawlerService {
               `[CrawlerService] 요소 ${globalProductIndex} 크롤링 중...`,
             );
             const resultData: { [key: string]: string } = {};
+            resultData['category'] = categoryName; // 추출 및 분류된 카테고리 이름 할당
+
             for (const [key, selectorOrSelectors] of Object.entries(
               itemSelectors,
             )) {
+              if (key === 'category') continue; // 이미 처리했으므로 건너뜀
+
               let value: string | null = null;
               const selectorsToTry = Array.isArray(selectorOrSelectors)
                 ? selectorOrSelectors
@@ -228,9 +287,13 @@ class CrawlerService {
             }
 
             // 모든 필수 선택자가 추출되었는지 확인
-            const allSelectorsFound = Object.keys(itemSelectors).every(
+            const requiredSelectors = Object.keys(itemSelectors).filter(
+              (k) => k !== 'category',
+            );
+            const allSelectorsFound = requiredSelectors.every(
               (selKey) => resultData[selKey] && resultData[selKey] !== '',
             );
+
             if (allSelectorsFound) {
               console.log(
                 `[CrawlerService] 요소 ${globalProductIndex} 크롤링 완료 (모든 선택자 추출 성공).`,
@@ -253,9 +316,13 @@ class CrawlerService {
           );
           globalProductIndex++;
           const resultData: { [key: string]: string } = {};
+          resultData['category'] = categoryName; // 추출 및 분류된 카테고리 이름 할당
+
           for (const [key, selectorOrSelectors] of Object.entries(
             itemSelectors,
           )) {
+            if (key === 'category') continue;
+
             let value: string | null = null;
             const selectorsToTry = Array.isArray(selectorOrSelectors)
               ? selectorOrSelectors
@@ -312,9 +379,13 @@ class CrawlerService {
             resultData[key] = value || ''; // 값을 찾지 못하면 빈 문자열
           }
           // 모든 필수 선택자가 추출되었는지 확인
-          const allSelectorsFound = Object.keys(itemSelectors).every(
+          const requiredSelectors = Object.keys(itemSelectors).filter(
+            (k) => k !== 'category',
+          );
+          const allSelectorsFound = requiredSelectors.every(
             (selKey) => resultData[selKey] && resultData[selKey] !== '',
           );
+
           if (allSelectorsFound) {
             console.log(
               `[CrawlerService] 요소 ${globalProductIndex} 크롤링 완료 (모든 선택자 추출 성공).`,
